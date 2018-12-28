@@ -41,7 +41,7 @@ public class CommunitiesSelfRegController
         String roleEnum = null; // To be filled in by customer.
         String accountId = ''; // To be filled in by customer.
         
-        String userName = firstName.charAt(0) + lastName + '@brave-panda-w0etr2.com';
+        String userName = firstName.charAt(0).format() + lastName + '@brave-panda-w0etr2.com';
 
         User u = new User();
         u.Username = userName;
@@ -50,7 +50,6 @@ public class CommunitiesSelfRegController
         u.LastName = lastName;
         u.CommunityNickname = communityNickname;
 		u.ProfileId = profileId;
-		//u.Social_Security_Number__c = socialSecurityNumber;
         
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
        	// Edited by: 	Evan W.
@@ -104,20 +103,24 @@ public class CommunitiesSelfRegController
         }
         
         if (userId != null) { 
-            if (password != null && password.length() > 1) {
+            
+            contactList = new List<Contact>();
+			contactList = [SELECT email, Social_Security_Number__c
+                           FROM Contact
+                           WHERE Email = :u.Email
+                           LIMIT 1];
+        
+			for (Contact c : contactList)
+            {
+            	c.Social_Security_Number__c = socialSecurityNumber;
+            }
+        
+            update contactList;
+            
+            if (password != null && password.length() > 1) {                
                 return Site.login(userName, password, ApexPages.currentPage().getParameters().get('startURL'));
             }
             else {
-					
-				/*contactList = new List<Contact>();
-				contactList = [SELECT email, Social_Security_Number__c
-                               FROM Contact
-                               WHERE Email = :u.Email
-                               LIMIT 1];
-				for (Contact c : contactList)
-                {
-                    c.Social_Security_Number__c = u.Social_Security_Number__c;
-                }*/
                 PageReference page = System.Page.CommunitiesSelfRegConfirm;
                 page.setRedirect(true);
                 return page;
