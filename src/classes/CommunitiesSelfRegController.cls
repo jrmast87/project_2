@@ -122,6 +122,23 @@ public class CommunitiesSelfRegController
         
         if (userId != null) { 
             
+            Contact c = new Contact();
+            try
+            {
+            	c = [SELECT ID, Social_Security_Number__c
+            		 FROM Contact
+            		 WHERE firstName = :firstName];
+            }
+            catch(QueryException e)
+            {
+            	ApexPages.addMessage(new ApexPages.message(ApexPages.Severity.ERROR,
+                                 'There was an error adding the contact.'));
+            	system.debug('contact query exception for ssn');
+            	return null;
+            }
+            c.Social_Security_Number__c = socialSecurityNumber;
+            update c;
+            
             if (password != null && password.length() > 1) {                
                 return Site.login(userName, password, 'southernheartteam3-developer-edition.na85.force.com/CustomerPortal');
             }
