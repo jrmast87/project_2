@@ -25,6 +25,9 @@
                     <apex:outputLabel value="Account Name" for="accountName"/>
                     <apex:inputText required="true" id="accountName" value="{!accountName}" label="Account Name"/>
                     
+                    <apex:outputLabel value="Account Code" for="accountCode"/>
+                    <apex:inputText required="true" id="accountCode" value="{!accountCode}" label="Account Code"/>
+                    
                     <apex:outputLabel value="SSN" for="socialSecurityNumber"/>
                     <apex:inputText required="true" id="socialSecurityNumber" value="{!socialSecurityNumber}" label="SSN"/>
                     <!--	END ADDITIONS  -->
