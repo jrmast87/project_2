@@ -16,6 +16,7 @@ public class CommunitiesSelfRegController
     public String confirmPassword {get; set { confirmPassword = value == null ? value : value.trim(); } }
     public String communityNickname {get; set { communityNickname = value == null ? value : value.trim(); } }
     public String socialSecurityNumber {get;set;}
+    public Decimal accountCode {get;set;}
     
     public CommunitiesSelfRegController() {
         String expid = ApexPages.currentPage().getParameters().get('expid');            
@@ -35,13 +36,14 @@ public class CommunitiesSelfRegController
             ApexPages.Message msg = new ApexPages.Message(ApexPages.Severity.ERROR, Label.site.passwords_dont_match);
             ApexPages.addMessage(msg);
             return null;
-        }    
-
-        String profileId = null; // To be filled in by customer.
+        }
+		
+		String profileID = null;
         String roleEnum = null; // To be filled in by customer.
         String accountId = ''; // To be filled in by customer.
         
-        String userName = firstName.charAt(0).format() + lastName + '@brave-panda-w0etr2.com';
+        Double d = Math.random() * 9999.00D;
+        String userName = firstName + '.' + lastName + '@brave-panda-w0etr2.com';
 
         User u = new User();
         u.Username = userName;
@@ -49,18 +51,20 @@ public class CommunitiesSelfRegController
         u.FirstName = firstName;
         u.LastName = lastName;
         u.CommunityNickname = communityNickname;
-		u.ProfileId = profileId;
         
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
        	// Edited by: 	Evan W.
        	// Addition:	Check to insure the account entered is
        	// 				in our org, then attach the user
        	// 			 	to that exsiting account.
-       	List<Account> accountList = new List<Account>();
-       	accountList = [SELECT ID
-                   	   FROM Account
-                   	   WHERE Name = :accountName];
-		if (accountList.isEmpty())
+       	Account a = new Account();
+       	try
+        {
+       		a = [SELECT ID, Account_Code__c
+                 FROM Account
+                 WHERE Name = :accountName];
+        }
+        catch (Exception e)
         {
         	ApexPages.addMessage(new ApexPages.message(ApexPages.Severity.ERROR,
                                  'Could not find ' + accountName + ' in our system.' +
@@ -68,7 +72,16 @@ public class CommunitiesSelfRegController
             system.debug('account query exception');
             return null;
         }
-        accountID = accountList[0].ID;
+        
+        if (a.Account_Code__c != accountCode)
+        {
+        	ApexPages.addMessage(new ApexPages.message(ApexPages.Severity.ERROR,
+                                 'Incorrect account code' +
+                                 '  Please enter correct account code.'));
+        	return null;
+        }
+        
+        accountID = a.ID;
         
         // Addition:	Check to see if the Contact is in the org
         // 				by email.  If not, add them to the Contact
@@ -85,14 +98,18 @@ public class CommunitiesSelfRegController
             return null;
         }
 
+
         //////////////////////////////////////////////////////END ADDITIONS//////////////////////////////////////////////////////
         
-        String userId;
-
+        
+		String userID;
+		
         try {
+            //userId = Site.createExternalUser(u, accountId, password);
+            
             userId = Site.createExternalUser(u, accountId, password);
         } catch(Site.ExternalUserCreateException ex) {
-            List<String> errors = ex.getDisplayMessages();
+                List<String> errors = ex.getDisplayMessages();
             for (String error : errors)  {
                 ApexPages.addMessage(new ApexPages.Message(ApexPages.Severity.ERROR, error));
             }
@@ -100,25 +117,30 @@ public class CommunitiesSelfRegController
             // This message is used for debugging. Do not display this in the UI to the end user.
             // It has the information around why the user creation failed.
             System.debug(ex.getMessage());
+            return null;
         }
         
         if (userId != null) { 
             
-            contactList = new List<Contact>();
-			contactList = [SELECT email, Social_Security_Number__c
-                           FROM Contact
-                           WHERE Email = :u.Email
-                           LIMIT 1];
-        
-			for (Contact c : contactList)
+            Contact c = new Contact();
+            try
             {
-            	c.Social_Security_Number__c = socialSecurityNumber;
+            	c = [SELECT ID, Social_Security_Number__c
+            		 FROM Contact
+            		 WHERE firstName = :firstName];
             }
-        
-            update contactList;
+            catch(QueryException e)
+            {
+            	ApexPages.addMessage(new ApexPages.message(ApexPages.Severity.ERROR,
+                                 'There was an error adding the contact.'));
+            	system.debug('contact query exception for ssn');
+            	return null;
+            }
+            c.Social_Security_Number__c = socialSecurityNumber;
+            update c;
             
             if (password != null && password.length() > 1) {                
-                return Site.login(userName, password, ApexPages.currentPage().getParameters().get('startURL'));
+                return Site.login(userName, password, 'southernheartteam3-developer-edition.na85.force.com/CustomerPortal');
             }
             else {
                 PageReference page = System.Page.CommunitiesSelfRegConfirm;
